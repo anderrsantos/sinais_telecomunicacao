@@ -32,8 +32,9 @@ class EnviaSinal:
         self.btn_parar = tk.Button(btn_frame, text="Parar", font=("Arial", 14), command=self.parar_gravacao, state=tk.DISABLED)
         self.btn_parar.pack(side=tk.LEFT, padx=5)
 
-        # Inicializa a figura e o canvas. O figsize foi ajustado para 3 plots lado a lado.
-        self.fig = plt.Figure(figsize=(12, 5))
+        # O figsize precisa ser ajustado para gráficos um abaixo do outro.
+        # Aumentamos a altura (8) em relação à largura (6) para acomodar melhor 3 plots verticais.
+        self.fig = plt.Figure(figsize=(6, 8))
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.canvas.get_tk_widget().pack()
 
@@ -109,6 +110,10 @@ class EnviaSinal:
             fc = 10000  # Frequência da portadora: 10 kHz
             carrier = np.sin(2 * np.pi * fc * t)
 
+            # Implementação da Modulação de Amplitude (AM)
+            # A amplitude do sinal de mensagem (audio_data) deve estar entre -1 e 1
+            # para que (1 + audio_data) esteja entre 0 e 2, evitando sobremodulação.
+            # Assumimos que audio_data já está normalizado para [-1, 1] vindo de parar_gravacao.
             modulated = (1 + audio_data) * carrier
 
             # Normaliza o sinal modulado para o máximo absoluto antes de salvar
@@ -123,22 +128,22 @@ class EnviaSinal:
 
             self.fig.clear() # Limpa a figura para desenhar novos gráficos
 
-            # Cria 3 subplots em uma linha
-            ax1 = self.fig.add_subplot(1, 3, 1)
+            # MODIFICAÇÃO AQUI: Criar 3 subplots em 3 linhas e 1 coluna
+            ax1 = self.fig.add_subplot(3, 1, 1) # 3 linhas, 1 coluna, primeiro subplot
             ax1.plot(t, audio_data)
             ax1.set_title("Áudio (Mensagem)")
             ax1.set_xlabel("Tempo (s)")
             ax1.set_ylabel("Amplitude")
             ax1.set_ylim([-1.1, 1.1]) # Define limites Y consistentes
 
-            ax2 = self.fig.add_subplot(1, 3, 2)
+            ax2 = self.fig.add_subplot(3, 1, 2) # 3 linhas, 1 coluna, segundo subplot
             ax2.plot(t, carrier)
             ax2.set_title("Sinal Portadora")
             ax2.set_xlabel("Tempo (s)")
             ax2.set_ylabel("Amplitude")
             ax2.set_ylim([-1.1, 1.1]) # Define limites Y consistentes
 
-            ax3 = self.fig.add_subplot(1, 3, 3)
+            ax3 = self.fig.add_subplot(3, 1, 3) # 3 linhas, 1 coluna, terceiro subplot
             ax3.plot(t, modulated)
             ax3.set_title("Sinal Modulado AM")
             ax3.set_xlabel("Tempo (s)")

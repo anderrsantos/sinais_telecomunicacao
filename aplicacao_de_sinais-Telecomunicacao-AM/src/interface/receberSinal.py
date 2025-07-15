@@ -14,7 +14,7 @@ class RecebeSinal:
         self.root = tk.Toplevel(root)
         self.root.title("Receber Sinal")
 
-        self.fs = 44100 # Garanta que esta taxa de amostragem seja a mesma do EnviaSinal!
+        self.fs = 44100
         self.arquivo_modulado = "src/assents/modulated.wav"
 
         label = tk.Label(self.root, text="Receber e Demodular Sinal", font=("Arial", 14))
@@ -30,8 +30,8 @@ class RecebeSinal:
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.canvas.get_tk_widget().pack()
 
-        btn_fechar = tk.Button(self.root, text="Fechar", command=self.root.destroy)
-        btn_fechar.pack(pady=10)
+        #btn_fechar = tk.Button(self.root, text="Fechar", command=self.root.destroy)
+        #btn_fechar.pack(pady=10)
 
     def demodular_sinal(self):
         try:
@@ -40,18 +40,7 @@ class RecebeSinal:
                 data = data.astype(np.float32) / 32768.0
 
             envelope = np.abs(data)
-
-            # --- FOCO AQUI PARA REMOVER O ZUMBIDO ---
-            # Ajustar cutoff e ordem para melhor filtragem da portadora
-            # Se a voz foi filtrada em 4000 Hz na modulação (EnviaSinal),
-            # o cutoff aqui deve ser 4000 Hz ou um pouco acima, mas ainda bem abaixo da portadora (10kHz).
-            # Aumentar a ordem para uma atenuação mais forte.
-            sinal_demodulado = self.filtra_passa_baixa(envelope, cutoff=4000, fs=fs, ordem=20) # Ajustado aqui
-            # Experimente:
-            # - cutoff=3500, ordem=20
-            # - cutoff=4000, ordem=25
-            # - cutoff=3800, ordem=25 (uma boa combinação)
-
+            sinal_demodulado = self.filtra_passa_baixa(envelope, cutoff=1500, fs=fs, ordem=10)
 
             max_val = np.max(np.abs(sinal_demodulado))
             if max_val > 0:
@@ -63,9 +52,7 @@ class RecebeSinal:
             sinal_int16 = np.int16(sinal_demodulado_norm * 32767)
             write("src/assents/demodulado.wav", fs, sinal_int16)
 
-            # Ajusta o tempo para o zoom nas plots
-            t = np.linspace(0, len(data) / fs, len(data), endpoint=False)
-
+            t = np.linspace(0, len(data) / fs, len(data))
 
             self.fig.clear()
             axs = self.fig.subplots(3, 1)
@@ -74,36 +61,21 @@ class RecebeSinal:
             axs[0].set_title("Sinal Modulado")
             axs[0].set_xlabel("Tempo [s]")
             axs[0].set_ylabel("Amplitude")
-            axs[0].set_xlim([0, 0.1])
-            axs[0].set_ylim([-1.1, 1.1])
-
 
             axs[1].plot(t, sinal_demodulado_norm)
             axs[1].set_title("Envelope Demodulado e Filtrado")
             axs[1].set_xlabel("Tempo [s]")
             axs[1].set_ylabel("Amplitude")
-            axs[1].set_xlim([0, 0.1])
-            axs[1].set_ylim([-1.1, 1.1])
-
 
             try:
                 fs2, existente = read("src/assents/enviarAudio.wav")
                 if existente.dtype == np.int16:
                     existente = existente.astype(np.float32) / 32768.0
-
-                max_val_existente = np.max(np.abs(existente))
-                if max_val_existente > 0:
-                    existente_norm = existente / max_val_existente
-                else:
-                    existente_norm = existente
-
-                t2 = np.linspace(0, len(existente) / fs2, len(existente), endpoint=False)
-                axs[2].plot(t2, existente_norm)
-                axs[2].set_title("Sinal Original de Referência (Normalizado)")
+                t2 = np.linspace(0, len(existente) / fs2, len(existente))
+                axs[2].plot(t2, existente)
+                axs[2].set_title("Sinal Original de Referência")
                 axs[2].set_xlabel("Tempo [s]")
                 axs[2].set_ylabel("Amplitude")
-                axs[2].set_xlim([0, 0.1])
-                axs[2].set_ylim([-1.1, 1.1])
             except FileNotFoundError:
                 axs[2].text(0.5, 0.5, "Arquivo 'enviarAudio.wav' não disponível", ha='center', va='center', transform=axs[2].transAxes)
                 axs[2].set_title("Sinal Original de Referência")
@@ -116,7 +88,7 @@ class RecebeSinal:
                 axs[2].set_ylabel("Amplitude")
 
 
-            self.fig.tight_layout()
+            self.fig.tight_layout() # Added to improve spacing
             self.canvas.draw()
             messagebox.showinfo("Sucesso", "Sinal demodulado e salvo com sucesso!")
 
@@ -138,32 +110,12 @@ class RecebeSinal:
             messagebox.showerror("Erro ao reproduzir", str(e))
 
     @staticmethod
-    def filtra_passa_baixa(signal, cutoff, fs, ordem=10):
-        """
-        Aplica um filtro passa-baixa Butterworth a um sinal.
-
-        Args:
-            signal (array_like): O sinal de entrada a ser filtrado.
-            cutoff (float): A frequência de corte do filtro em Hz.
-            fs (float): A taxa de amostragem do sinal em Hz.
-            ordem (int, optional): A ordem do filtro. Padrão é 10.
-
-        Returns:
-            array_like: O sinal filtrado.
-
-        Raises:
-            ValueError: Se a frequência de corte for muito alta para a taxa de amostragem.
-        """
-        nyquist = 0.5 * fs  # Frequência de Nyquist (metade da taxa de amostragem)
-        normal_cutoff = cutoff / nyquist # Frequência de corte normalizada (entre 0 e 1)
-
-        # Garante que a frequência de corte normalizada esteja dentro do intervalo válido (0, 1)
+    def filtra_passa_baixa(signal, cutoff=1500, fs=44100, ordem=10):
+        nyquist = 0.5 * fs
+        normal_cutoff = cutoff / nyquist
+        # Ensure that the normalized cutoff frequency is within (0, 1)
         if not (0 < normal_cutoff < 1):
-            raise ValueError(f"A frequência de corte {cutoff} Hz é muito alta para a taxa de amostragem {fs} Hz. "
-                             "Por favor, escolha uma frequência de corte menor que a frequência de Nyquist (fs/2).")
-
-        # Projeta o filtro Butterworth (coeficientes 'b' e 'a')
+            raise ValueError(f"Cutoff frequency {cutoff} Hz is too high for sampling rate {fs} Hz. "
+                             "Please choose a cutoff frequency less than Nyquist frequency (fs/2).")
         b, a = butter(ordem, normal_cutoff, btype='low')
-
-        # Aplica o filtro ao sinal usando filtfilt para fase zero (sem atraso de fase)
         return filtfilt(b, a, signal)
