@@ -1,0 +1,9 @@
+# Instalar as bibliotecas no Linux (Ubuntu/Debian)
+sudo apt-get update
+sudo apt install python3-pip
+pip install numpy matplotlib sounddevice scipy tkinter
+
+
+# para Instalar o PortAudio no Linux (Ubuntu/Debian) - para gravar o audio
+sudo apt-get update
+sudo apt-get install portaudio19-dev
