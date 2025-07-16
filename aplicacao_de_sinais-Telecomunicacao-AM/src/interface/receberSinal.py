@@ -112,9 +112,7 @@ class RecebeSinal:
     def filtra_passa_baixa(signal, cutoff=1500, fs=44100, ordem=10):
         nyquist = 0.5 * fs
         normal_cutoff = cutoff / nyquist
-        # Ensure that the normalized cutoff frequency is within (0, 1)
         if not (0 < normal_cutoff < 1):
-            raise ValueError(f"Cutoff frequency {cutoff} Hz is too high for sampling rate {fs} Hz. "
-                             "Please choose a cutoff frequency less than Nyquist frequency (fs/2).")
+            raise ValueError(f"Frequência de cortes {cutoff} Hz é muito alta para a taxa de amostragem {fs} Hz.")
         b, a = butter(ordem, normal_cutoff, btype='low')
         return filtfilt(b, a, signal)
