@@ -30,8 +30,7 @@ class RecebeSinal:
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.canvas.get_tk_widget().pack()
 
-        #btn_fechar = tk.Button(self.root, text="Fechar", command=self.root.destroy)
-        #btn_fechar.pack(pady=10)
+
 
     def demodular_sinal(self):
         try:
@@ -90,7 +89,7 @@ class RecebeSinal:
 
             self.fig.tight_layout() # Added to improve spacing
             self.canvas.draw()
-            messagebox.showinfo("Sucesso", "Sinal demodulado e salvo com sucesso!")
+            #messagebox.showinfo("Sucesso", "Sinal demodulado e salvo com sucesso!")
 
         except FileNotFoundError:
             messagebox.showerror("Erro", f"Arquivo '{self.arquivo_modulado}' não encontrado. Certifique-se de que o arquivo esteja no caminho correto.")

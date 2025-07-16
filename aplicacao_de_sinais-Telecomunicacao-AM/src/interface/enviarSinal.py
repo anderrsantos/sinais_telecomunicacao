@@ -32,7 +32,6 @@ class EnviaSinal:
         self.btn_parar = tk.Button(btn_frame, text="Parar", font=("Arial", 14), command=self.parar_gravacao, state=tk.DISABLED)
         self.btn_parar.pack(side=tk.LEFT, padx=5)
 
-        # O figsize precisa ser ajustado para gráficos um abaixo do outro.
         # Aumentamos a altura (8) em relação à largura (6) para acomodar melhor 3 plots verticais.
         self.fig = plt.Figure(figsize=(6, 8))
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
@@ -57,7 +56,7 @@ class EnviaSinal:
         try:
             self.stream = sd.InputStream(samplerate=self.fs, channels=1, callback=self.callback)
             self.stream.start()
-            messagebox.showinfo("Gravando", "Gravação iniciada! Fale agora...")
+            # messagebox.showinfo("Gravando", "Gravação iniciada! Fale agora...")
         except Exception as e:
             messagebox.showerror("Erro de Gravação", f"Não foi possível iniciar a gravação: {e}\nVerifique seu microfone e drivers de áudio.")
             self.is_recording = False
@@ -89,7 +88,6 @@ class EnviaSinal:
         audio_data = audio_data.flatten()
 
         # Normaliza o áudio para o intervalo [-1, 1] para evitar clipping
-        # e garantir que a modulação AM seja feita sem sobremodulação indesejada.
         max_abs_audio = np.max(np.abs(audio_data))
         if max_abs_audio > 0:
             audio_data_norm = audio_data / max_abs_audio
@@ -98,7 +96,7 @@ class EnviaSinal:
 
         audio_data_int16 = np.int16(audio_data_norm * 32767) # Converte para int16 para salvar
         write(self.arquivo_audio, self.fs, audio_data_int16)
-        messagebox.showinfo("Sucesso", f"Áudio salvo como {self.arquivo_audio}")
+        #messagebox.showinfo("Sucesso", f"Áudio salvo como {self.arquivo_audio}")
         
         # Passa o áudio normalizado para a função de plotagem e modulação
         self.plotar_audio_e_modulado(audio_data_norm)
@@ -111,9 +109,6 @@ class EnviaSinal:
             carrier = np.sin(2 * np.pi * fc * t)
 
             # Implementação da Modulação de Amplitude (AM)
-            # A amplitude do sinal de mensagem (audio_data) deve estar entre -1 e 1
-            # para que (1 + audio_data) esteja entre 0 e 2, evitando sobremodulação.
-            # Assumimos que audio_data já está normalizado para [-1, 1] vindo de parar_gravacao.
             modulated = (1 + audio_data) * carrier
 
             # Normaliza o sinal modulado para o máximo absoluto antes de salvar
@@ -149,8 +144,6 @@ class EnviaSinal:
             ax3.set_xlabel("Tempo (s)")
             ax3.set_ylabel("Amplitude")
             # Para o sinal modulado, os limites Y devem acomodar (1 + audio_data) * carrier
-            # Se audio_data está em [-1, 1], então (1 + audio_data) está em [0, 2],
-            # então o sinal modulado pode variar entre [-2, 2].
             ax3.set_ylim([-2.2, 2.2])
 
             self.fig.tight_layout()  # Ajusta os espaçamentos entre os subplots para melhor visualização
